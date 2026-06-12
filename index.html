@@ -61,6 +61,27 @@
   .post-link { color:#0070d2; text-decoration:none; font-weight:600; white-space:nowrap; }
   .post-link:hover { text-decoration:underline; }
   .footer { text-align:center; padding:20px; color:#94a3b8; font-size:12px; }
+  /* Filter & Sort */
+  .filter-bar { background:white; border-radius:12px; padding:16px 20px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:16px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .filter-bar label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#64748b; margin-right:4px; }
+  .filter-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .filter-chip { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid #e2e8f0; background:white; color:#475569; transition:all .15s; user-select:none; }
+  .filter-chip:hover { border-color:#0070d2; color:#0070d2; }
+  .filter-chip.active { background:#0070d2; color:white; border-color:#0070d2; }
+  .filter-chip.active-red { background:#dc2626; color:white; border-color:#dc2626; }
+  .filter-chip.active-green { background:#15803d; color:white; border-color:#15803d; }
+  .filter-chip.active-amber { background:#d97706; color:white; border-color:#d97706; }
+  .filter-chip.active-purple { background:#7c3aed; color:white; border-color:#7c3aed; }
+  .search-box { padding:6px 12px; border-radius:8px; border:1.5px solid #e2e8f0; font-size:13px; outline:none; width:200px; }
+  .search-box:focus { border-color:#0070d2; }
+  .filter-sep { width:1px; height:24px; background:#e2e8f0; }
+  .result-count { font-size:12px; color:#64748b; margin-left:auto; }
+  th.sortable { cursor:pointer; user-select:none; }
+  th.sortable:hover { color:#0070d2; }
+  th.sortable::after { content:' ↕'; opacity:0.4; font-size:10px; }
+  th.sort-asc::after { content:' ↑'; opacity:1; color:#0070d2; }
+  th.sort-desc::after { content:' ↓'; opacity:1; color:#0070d2; }
+  tr.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -122,19 +143,58 @@
     </div>
   </div>
   <div class="section-title">📋 Prioritized Requests by Opportunity Value</div>
-  <table>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <input class="search-box" type="text" id="searchBox" placeholder="🔍 Search accounts..." oninput="applyFilters()">
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <label>Status</label>
+      <span class="filter-chip" data-filter="status" data-value="Assigned" onclick="toggleChip(this,'active-green')">Assigned</span>
+      <span class="filter-chip" data-filter="status" data-value="Under Review" onclick="toggleChip(this,'active-amber')">Under Review</span>
+      <span class="filter-chip" data-filter="status" data-value="New" onclick="toggleChip(this,'active')">New</span>
+      <span class="filter-chip" data-filter="status" data-value="On Hold" onclick="toggleChip(this,'active')">On Hold</span>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <label>Team</label>
+      <span class="filter-chip" data-filter="team" data-value="FDE" onclick="toggleChip(this,'active-purple')">FDE</span>
+      <span class="filter-chip" data-filter="team" data-value="ETA" onclick="toggleChip(this,'active-purple')">ETA</span>
+      <span class="filter-chip" data-filter="team" data-value="ITA" onclick="toggleChip(this,'active-purple')">ITA</span>
+      <span class="filter-chip" data-filter="team" data-value="Account Team" onclick="toggleChip(this,'active-purple')">Account Team</span>
+      <span class="filter-chip" data-filter="team" data-value="—" onclick="toggleChip(this,'active-red')">Unassigned</span>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <label>Compete</label>
+      <span class="filter-chip" data-filter="comp" data-value="Sierra" onclick="toggleChip(this,'active-red')">🔴 Sierra</span>
+      <span class="filter-chip" data-filter="comp" data-value="MSFT" onclick="toggleChip(this,'active')">🟠 MSFT</span>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <label>AVP</label>
+      <span class="filter-chip" data-filter="avp" data-value="Bobby Choplin" onclick="toggleChip(this,'active')">Choplin</span>
+      <span class="filter-chip" data-filter="avp" data-value="Marshall Hall" onclick="toggleChip(this,'active')">Hall</span>
+      <span class="filter-chip" data-filter="avp" data-value="William Kleman" onclick="toggleChip(this,'active')">Kleman</span>
+      <span class="filter-chip" data-filter="avp" data-value="Betsy Stockwell" onclick="toggleChip(this,'active')">Stockwell</span>
+    </div>
+    <span class="result-count" id="resultCount">33 of 33</span>
+    <span class="filter-chip" onclick="clearAll()" style="margin-left:4px;color:#dc2626;border-color:#fca5a5">✕ Clear</span>
+  </div>
+
+  <table id="mainTable">
     <thead>
       <tr>
         <th>#</th>
-        <th>Account</th>
-        <th>Opp Value</th>
-        <th>Status</th>
-        <th>AVP</th>
-        <th>Team</th>
+        <th class="sortable" onclick="sortTable(1)">Account</th>
+        <th class="sortable" onclick="sortTable(2)">Opp Value</th>
+        <th class="sortable" onclick="sortTable(3)">Status</th>
+        <th class="sortable" onclick="sortTable(4)">AVP</th>
+        <th class="sortable" onclick="sortTable(5)">Team</th>
         <th>Competitors</th>
-        <th>AF</th>
-        <th>D360</th>
-        <th>Budget</th>
+        <th class="sortable" onclick="sortTable(7)">AF</th>
+        <th class="sortable" onclick="sortTable(8)">D360</th>
+        <th class="sortable" onclick="sortTable(9)">Budget</th>
         <th>Post</th>
       </tr>
     </thead>
@@ -538,5 +598,113 @@
   </table>
   <div class="footer" style="margin-top:24px">Generated June 12, 2026 · Michelle Collins · Source: PACE Builder Intake Request List</div>
 </div>
+<script>
+// Store data attributes on rows for filtering
+document.addEventListener('DOMContentLoaded', function() {
+  var rows = document.querySelectorAll('#mainTable tbody tr');
+  rows.forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    row.dataset.account = cells[1] ? cells[1].textContent.trim() : '';
+    row.dataset.status  = cells[3] ? cells[3].textContent.trim() : '';
+    row.dataset.avp     = cells[4] ? cells[4].textContent.trim() : '';
+    row.dataset.team    = cells[5] ? cells[5].textContent.trim() : '';
+    row.dataset.comp    = cells[6] ? cells[6].textContent.trim() : '';
+    // store numeric value for sorting
+    var valText = cells[2] ? cells[2].textContent.replace(/[$,]/g,'').trim() : '0';
+    row.dataset.val = isNaN(parseFloat(valText)) ? 0 : parseFloat(valText);
+  });
+  updateCount();
+});
+
+var activeFilters = {};
+
+function toggleChip(chip, activeClass) {
+  var filter = chip.dataset.filter;
+  var value  = chip.dataset.value;
+  // remove active from same filter group
+  document.querySelectorAll('[data-filter="'+filter+'"]').forEach(function(c) {
+    c.classList.remove('active','active-red','active-green','active-amber','active-purple');
+  });
+  if (activeFilters[filter] === value) {
+    delete activeFilters[filter];
+  } else {
+    activeFilters[filter] = value;
+    chip.classList.add(activeClass);
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var search = document.getElementById('searchBox').value.toLowerCase();
+  var rows = document.querySelectorAll('#mainTable tbody tr');
+  rows.forEach(function(row) {
+    var show = true;
+    if (search && !row.dataset.account.toLowerCase().includes(search)) show = false;
+    if (activeFilters.status && row.dataset.status !== activeFilters.status) show = false;
+    if (activeFilters.team) {
+      var teamVal = activeFilters.team;
+      if (teamVal === '—') {
+        if (row.dataset.team !== '—') show = false;
+      } else {
+        if (!row.dataset.team.includes(teamVal)) show = false;
+      }
+    }
+    if (activeFilters.comp && !row.dataset.comp.toLowerCase().includes(activeFilters.comp.toLowerCase())) show = false;
+    if (activeFilters.avp && row.dataset.avp !== activeFilters.avp) show = false;
+    row.classList.toggle('hidden', !show);
+  });
+  updateCount();
+}
+
+function clearAll() {
+  activeFilters = {};
+  document.querySelectorAll('.filter-chip').forEach(function(c) {
+    c.classList.remove('active','active-red','active-green','active-amber','active-purple');
+  });
+  document.getElementById('searchBox').value = '';
+  applyFilters();
+}
+
+function updateCount() {
+  var visible = document.querySelectorAll('#mainTable tbody tr:not(.hidden)').length;
+  var total   = document.querySelectorAll('#mainTable tbody tr').length;
+  document.getElementById('resultCount').textContent = visible + ' of ' + total;
+}
+
+var sortDir = {};
+function sortTable(colIdx) {
+  var table = document.getElementById('mainTable');
+  var tbody = table.querySelector('tbody');
+  var rows  = Array.from(tbody.querySelectorAll('tr'));
+  var th    = table.querySelectorAll('th')[colIdx];
+  var asc   = !sortDir[colIdx];
+  sortDir   = {};
+  sortDir[colIdx] = asc;
+
+  // update header indicators
+  table.querySelectorAll('th').forEach(function(h) {
+    h.classList.remove('sort-asc','sort-desc');
+  });
+  th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+
+  rows.sort(function(a, b) {
+    var aVal, bVal;
+    if (colIdx === 2) { // numeric value
+      aVal = parseFloat(a.dataset.val) || 0;
+      bVal = parseFloat(b.dataset.val) || 0;
+      return asc ? aVal - bVal : bVal - aVal;
+    }
+    aVal = a.querySelectorAll('td')[colIdx].textContent.trim().toLowerCase();
+    bVal = b.querySelectorAll('td')[colIdx].textContent.trim().toLowerCase();
+    return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+  });
+  rows.forEach(function(r) { tbody.appendChild(r); });
+  // re-number
+  var num = 1;
+  rows.forEach(function(r) {
+    r.querySelector('.rank').textContent = num++;
+  });
+}
+</script>
 </body>
 </html>
